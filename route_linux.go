@@ -939,23 +939,25 @@ func deserializeRoute(m []byte) (Route, error) {
 }
 
 // RouteGet gets a route to a specific destination from the host system.
-// Equivalent to: 'ip route get'.
-func RouteGet(destination net.IP) ([]Route, error) {
-	return pkgHandle.RouteGet(destination)
+// Equivalent to: 'ip route get <destination> [from <from>]'.
+func RouteGet(destination net.IP, from net.IP) ([]Route, error) {
+	return pkgHandle.RouteGet(destination, from)
 }
 
 // RouteGet gets a route to a specific destination from the host system.
-// Equivalent to: 'ip route get'.
-func (h *Handle) RouteGet(destination net.IP) ([]Route, error) {
+// Equivalent to: 'ip route get <destination> [from <from>]'.
+func (h *Handle) RouteGet(destination net.IP, from net.IP) ([]Route, error) {
 	req := h.newNetlinkRequest(unix.RTM_GETROUTE, unix.NLM_F_REQUEST)
 	family := nl.GetIPFamily(destination)
-	var destinationData []byte
+	var destinationData, fromData []byte
 	var bitlen uint8
 	if family == FAMILY_V4 {
 		destinationData = destination.To4()
+		fromData = from.To4() // note if from is nil To4() returns nil
 		bitlen = 32
 	} else {
 		destinationData = destination.To16()
+		fromData = from.To16()
 		bitlen = 128
 	}
 	msg := &nl.RtMsg{}
@@ -965,6 +967,11 @@ func (h *Handle) RouteGet(destination net.IP) ([]Route, error) {
 
 	rtaDst := nl.NewRtAttr(unix.RTA_DST, destinationData)
 	req.AddData(rtaDst)
+
+	if fromData != nil {
+		rtaSrc := nl.NewRtAttr(unix.RTA_SRC, fromData)
+		req.AddData(rtaSrc)
+	}
 
 	msgs, err := req.Execute(unix.NETLINK_ROUTE, unix.RTM_NEWROUTE)
 	if err != nil {
