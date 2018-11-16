@@ -25,7 +25,11 @@ type Rule struct {
 }
 
 func (r Rule) String() string {
-	return fmt.Sprintf("ip rule %d: from %s table %d", r.Priority, r.Src, r.Table)
+	src := "all"
+	if r.Src != nil {
+		src = r.Src.String()
+	}
+	return fmt.Sprintf("ip rule %d: from %s table %d", r.Priority, src, r.Table)
 }
 
 // NewRule return empty rules.
