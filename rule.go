@@ -25,11 +25,21 @@ type Rule struct {
 }
 
 func (r Rule) String() string {
-	src := "all"
-	if r.Src != nil {
-		src = r.Src.String()
+	var dst, iif, oif string
+	if r.Dst != nil {
+		dst = " to " + r.Dst.String()
 	}
-	return fmt.Sprintf("ip rule %d: from %s table %d", r.Priority, src, r.Table)
+	if r.IifName != "" {
+		iif = " iif " + r.IifName
+	}
+	if r.OifName != "" {
+		oif = " oif " + r.OifName
+	}
+	src := " from all"
+	if r.Src != nil {
+		src = " from " + r.Src.String()
+	}
+	return fmt.Sprintf("ip rule %d:%s%s%s%s table %d", r.Priority, src, dst, iif, oif, r.Table)
 }
 
 // NewRule return empty rules.
