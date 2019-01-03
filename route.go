@@ -57,7 +57,7 @@ func (r Route) String() string {
 	}
 	if r.MPLSDst != nil {
 		elems = append(elems, fmt.Sprintf("Dst: %d", r.MPLSDst))
-	} else {
+	} else if r.Dst != nil {
 		elems = append(elems, fmt.Sprintf("Dst: %s", r.Dst))
 	}
 	if r.NewDst != nil {
