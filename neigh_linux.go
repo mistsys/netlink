@@ -297,13 +297,13 @@ func NeighDeserialize(m []byte) (*Neigh, error) {
 // NeighSubscribe takes a chan down which notifications will be sent
 // when neighbors are added or deleted. Close the 'done' chan to stop subscription.
 func NeighSubscribe(ch chan<- NeighUpdate, done <-chan struct{}) error {
-	return neighSubscribeAt(netns.None(), netns.None(), ch, done, nil, false)
+	return neighSubscribeAt(netns.None(), netns.None(), ch, done, nil, false, false)
 }
 
 // NeighSubscribeAt works like NeighSubscribe plus it allows the caller
 // to choose the network namespace in which to subscribe (ns).
 func NeighSubscribeAt(ns netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}) error {
-	return neighSubscribeAt(ns, netns.None(), ch, done, nil, false)
+	return neighSubscribeAt(ns, netns.None(), ch, done, nil, false, false)
 }
 
 // NeighSubscribeOptions contains a set of options to use with
@@ -312,6 +312,7 @@ type NeighSubscribeOptions struct {
 	Namespace     *netns.NsHandle
 	ErrorCallback func(error)
 	ListExisting  bool
+	NoENOBUFS     bool
 }
 
 // NeighSubscribeWithOptions work like NeighSubscribe but enable to
@@ -322,13 +323,19 @@ func NeighSubscribeWithOptions(ch chan<- NeighUpdate, done <-chan struct{}, opti
 		none := netns.None()
 		options.Namespace = &none
 	}
-	return neighSubscribeAt(*options.Namespace, netns.None(), ch, done, options.ErrorCallback, options.ListExisting)
+	return neighSubscribeAt(*options.Namespace, netns.None(), ch, done, options.ErrorCallback, options.ListExisting, options.NoENOBUFS)
 }
 
-func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}, cberr func(error), listExisting bool) error {
+func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}, cberr func(error), listExisting bool, no_enobufs bool) error {
 	s, err := nl.SubscribeAt(newNs, curNs, unix.NETLINK_ROUTE, unix.RTNLGRP_NEIGH)
 	if err != nil {
 		return err
+	}
+	if no_enobufs {
+		err = unix.SetsockoptInt(int(s.GetFd()), unix.SOL_NETLINK, unix.NETLINK_NO_ENOBUFS, 1)
+		if err != nil {
+			return err
+		}
 	}
 	if done != nil {
 		go func() {
