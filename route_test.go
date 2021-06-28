@@ -48,7 +48,7 @@ func TestRouteAddDel(t *testing.T) {
 	}
 
 	dstIP := net.IPv4(192, 168, 0, 42)
-	routeToDstIP, err := RouteGet(dstIP)
+	routeToDstIP, err := RouteGet(dstIP, nil, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestRoute6AddDel(t *testing.T) {
 	}
 
 	dstIP := net.ParseIP("2001:db8::1")
-	routeToDstIP, err := RouteGet(dstIP)
+	routeToDstIP, err := RouteGet(dstIP, nil, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1259,7 +1259,7 @@ func TestSEG6LocalRoute6AddDel(t *testing.T) {
 	// typically one route (fe80::/64) will be created when dummy_route6 is created.
 	// Thus you cannot use RouteList() to find the route entry just added.
 	// Lookup route and confirm it's SEG6Local route just added.
-	routesFound, err := RouteGet(dst1.IP)
+	routesFound, err := RouteGet(dst1.IP, nil, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1275,7 +1275,7 @@ func TestSEG6LocalRoute6AddDel(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Confirm route is deleted.
-	routesFound, err = RouteGet(dst1.IP)
+	routesFound, err = RouteGet(dst1.IP, nil, -1)
 	if err == nil {
 		t.Fatal("SEG6Local route still exists.")
 	}

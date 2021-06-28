@@ -22,6 +22,7 @@ type Rule struct {
 	SuppressIfgroup   int
 	SuppressPrefixlen int
 	Invert            bool
+	UID               *RuleUIDRange
 }
 
 func (r Rule) String() string {
@@ -53,4 +54,15 @@ func NewRule() *Rule {
 		Goto:              -1,
 		Flow:              -1,
 	}
+}
+
+// NewRuleUIDRange creates rule uid range.
+func NewRuleUIDRange(start, end uint32) *RuleUIDRange {
+	return &RuleUIDRange{Start: start, End: end}
+}
+
+// RuleUIDRange represents rule uid range.
+type RuleUIDRange struct {
+	Start uint32
+	End   uint32
 }
