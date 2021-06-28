@@ -939,14 +939,14 @@ func deserializeRoute(m []byte) (Route, error) {
 }
 
 // RouteGet gets a route to a specific destination from the host system.
-// Equivalent to: 'ip route get <destination> [from <from>]'.
-func RouteGet(destination net.IP, from net.IP) ([]Route, error) {
-	return pkgHandle.RouteGet(destination, from)
+// Equivalent to: 'ip route get <destination> [from <from>] [uid <uid>]'.
+func RouteGet(destination net.IP, from net.IP, uid int) ([]Route, error) {
+	return pkgHandle.RouteGet(destination, from, uid)
 }
 
 // RouteGet gets a route to a specific destination from the host system.
-// Equivalent to: 'ip route get <destination> [from <from>]'.
-func (h *Handle) RouteGet(destination net.IP, from net.IP) ([]Route, error) {
+// Equivalent to: 'ip route get <destination> [from <from>] [uid <uid>]'.
+func (h *Handle) RouteGet(destination net.IP, from net.IP, uid int) ([]Route, error) {
 	req := h.newNetlinkRequest(unix.RTM_GETROUTE, unix.NLM_F_REQUEST)
 	family := nl.GetIPFamily(destination)
 	var destinationData, fromData []byte
@@ -971,6 +971,13 @@ func (h *Handle) RouteGet(destination net.IP, from net.IP) ([]Route, error) {
 	if fromData != nil {
 		rtaSrc := nl.NewRtAttr(unix.RTA_SRC, fromData)
 		req.AddData(rtaSrc)
+	}
+
+	if uid > 0 {
+		b := make([]byte, 4)
+		native.PutUint32(b, uint32(uid))
+		rtaUID := nl.NewRtAttr(unix.RTA_UID, b)
+		req.AddData(rtaUID)
 	}
 
 	msgs, err := req.Execute(unix.NETLINK_ROUTE, unix.RTM_NEWROUTE)
