@@ -1,6 +1,7 @@
 package netlink
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 
@@ -149,6 +150,10 @@ func ruleHandle(rule *Rule, req *nl.NetlinkRequest) error {
 		native.PutUint32(b, uint32(rule.Goto))
 		req.AddData(nl.NewRtAttr(nl.FRA_GOTO, b))
 	}
+	if rule.UID != nil {
+		b := rule.UID.toRtAttrData()
+		req.AddData(nl.NewRtAttr(nl.FRA_UID_RANGE, b))
+	}
 
 	_, err := req.Execute(unix.NETLINK_ROUTE, 0)
 	return err
@@ -225,10 +230,19 @@ func (h *Handle) RuleList(family int) ([]Rule, error) {
 				rule.Goto = int(native.Uint32(attrs[j].Value[0:4]))
 			case nl.FRA_PRIORITY:
 				rule.Priority = int(native.Uint32(attrs[j].Value[0:4]))
+			case nl.FRA_UID_RANGE:
+				rule.UID = NewRuleUIDRange(native.Uint32(attrs[j].Value[0:4]), native.Uint32(attrs[j].Value[4:8]))
 			}
 		}
 		res = append(res, *rule)
 	}
 
 	return res, nil
+}
+
+func (pr *RuleUIDRange) toRtAttrData() []byte {
+	b := [][]byte{make([]byte, 4), make([]byte, 4)}
+	native.PutUint32(b[0], pr.Start)
+	native.PutUint32(b[1], pr.End)
+	return bytes.Join(b, []byte{})
 }
